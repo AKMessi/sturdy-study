@@ -15,15 +15,21 @@ llm = ChatGoogleGenerativeAI(
 
 # prompt template
 RAG_PROMPT_TEMPLATE = """
+You are an expert AI study assistant named "Sturdy Study".
+Your user has provided you with their lecture notes, slides, and audio transcripts.
+This context is in the "CONTEXT" section below.
+
 CONTEXT:
 {context}
 
 QUESTION:
 {question}
 
-Based *only* on the context provided, please answer the user's question.
-If the context does not contain the answer, state "I do not have enough information from your documents to answer that."
-Do not make up information.
+Your task is to answer the user's "QUESTION" using *only* the "CONTEXT".
+- **Do NOT just copy-paste the context.**
+- **Synthesize** the information from all relevant parts of the context.
+- **Explain** the answer clearly and concisely in your own words, as a helpful tutor would.
+- If the context does not contain the answer, state "I do not have enough information from your documents to answer that."
 """
 
 rag_prompt = PromptTemplate.from_template(RAG_PROMPT_TEMPLATE)
