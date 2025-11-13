@@ -5,6 +5,7 @@ import shutil
 from src.rag_system.loader import load_and_split_pdf, transcribe_and_split_audio
 from src.rag_system.vector_store import add_documents_to_store
 from src.rag_system.graph import get_agent_runnable, AgentState
+from src.rag_system.search_chain import get_rag_search_runnable
 
 # setup
 router = APIRouter()
@@ -25,6 +26,15 @@ class ChatResponse(BaseModel):
     quiz: str | None = None
     user_id: str
     question: str
+
+class SearchRequest(BaseModel):
+    topic: str
+    user_id: str
+
+class SearchResponse(BaseModel):
+    results: str  # This will be the formatted Markdown string
+    user_id: str
+    topic: str
 
 @router.post("/upload", response_model=UploadResponse)
 async def upload_pdf(
@@ -136,3 +146,33 @@ async def chat_with_docs(request: ChatRequest):
     
     except Exception as e:
         raise HTTPException(500, f"Error during chat: {str(e)}")
+    
+@router.post("/find-problems", response_model=SearchResponse)
+async def find_problems(request: SearchRequest):
+    """
+    Find relevant practice problems from the web.
+    This endpoint uses RAG to power a Firecrawl search-and-scrape
+    for maximum relevance.
+    """
+    
+    try:
+        # get the runnable
+        search_chain = get_rag_search_runnable()
+        
+        # defining the input
+        input_data = {
+            "topic": request.topic,
+            "user_id": request.user_id
+        }
+        
+        # invoking the chain
+        results = search_chain.invoke(input_data)
+        
+        return SearchResponse(
+            results=results,
+            user_id=request.user_id,
+            topic=request.topic
+        )
+    
+    except Exception as e:
+        raise HTTPException(500, f"Error finding problems: {str(e)}")

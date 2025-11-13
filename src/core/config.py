@@ -4,7 +4,7 @@ class Settings(BaseSettings):
     """
     Loads and validates all environment variables.
     """
-    
+
     model_config = SettingsConfigDict(
         env_file=".env", 
         env_file_encoding='utf-8', 
@@ -12,5 +12,6 @@ class Settings(BaseSettings):
     )
 
     GOOGLE_API_KEY: str
+    FIRECRAWL_API_KEY: str
 
 settings = Settings()
