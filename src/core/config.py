@@ -12,6 +12,6 @@ class Settings(BaseSettings):
     )
 
     GOOGLE_API_KEY: str
-    FIRECRAWL_API_KEY: str
+    TAVILY_API_KEY: str
 
 settings = Settings()
