@@ -30,7 +30,7 @@ def add_documents_to_store(docs: List[Document], collection_name: str = DEFAULT_
     """
     Adds a list of documents to the persistent vector store.
     """
-    
+
     print(f"[VectorStore] Adding {len(docs)} documents to collection '{collection_name}'...")
     vector_store = _get_vector_store(collection_name)
     vector_store.add_documents(docs)

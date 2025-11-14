@@ -6,7 +6,6 @@ from src.rag_system.loader import load_and_split_pdf, transcribe_and_split_audio
 from src.rag_system.vector_store import add_documents_to_store
 from src.rag_system.graph import get_agent_runnable, AgentState
 from src.rag_system.search_chain import get_rag_search_runnable
-from src.rag_system.definition_chain import get_definition_runnable
 
 # setup
 router = APIRouter()
@@ -36,15 +35,6 @@ class SearchResponse(BaseModel):
     results: str  # This will be the formatted Markdown string
     user_id: str
     topic: str
-
-class DefinitionRequest(BaseModel):
-    term: str
-    user_id: str
-
-class DefinitionResponse(BaseModel):
-    definition: str
-    user_id: str
-    term: str
 
 @router.post("/upload", response_model=UploadResponse)
 async def upload_pdf(
@@ -186,31 +176,3 @@ async def find_problems(request: SearchRequest):
     
     except Exception as e:
         raise HTTPException(500, f"Error finding problems: {str(e)}")
-    
-@router.post("/define", response_model=DefinitionResponse)
-async def get_definition(request: DefinitionRequest):
-    """
-    Get a word-for-word definition for a term from the RAG context.
-    """
-    
-    try:
-        # getting the runnable
-        definition_chain = get_definition_runnable()
-        
-        # defining the input data
-        input_data = {
-            "term": request.term,
-            "user_id": request.user_id
-        }
-        
-        # invoking the chain
-        definition = definition_chain.invoke(input_data)
-        
-        return DefinitionResponse(
-            definition=definition,
-            user_id=request.user_id,
-            term=request.term
-        )
-    
-    except Exception as e:
-        raise HTTPException(500, f"Error finding definition: {str(e)}")

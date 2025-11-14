@@ -73,8 +73,7 @@ with st.sidebar:
 
 tab1, tab2, tab3 = st.tabs([
     "**💬 Chat with Docs**", 
-    "**🔎 Find Practice Problems**", 
-    "**📖 Word-for-Word Definitions**"
+    "**🔎 Find Practice Problems**"
 ])
 
 with tab1:
@@ -147,31 +146,6 @@ with tab2:
                     if response.status_code == 200:
                         data = response.json()
                         st.markdown(data.get("results", "No results found."))
-                    else:
-                        st.error(f"Error {response.status_code}: {response.text}")
-                
-                except Exception as e:
-                    st.error(f"Connection Error: {e}")
-
-with tab3:
-    st.subheader("Word-for-Word Definitions")
-    st.caption("Look up exact definitions from your uploaded documents.")
-    
-    term = st.text_input("Enter a term (e.g., 'linear regression')", key="define_term")
-    
-    if st.button("Find Definition"):
-        if not term:
-            st.error("Please enter a term.")
-        else:
-            with st.spinner(f"Searching your docs for '{term}'..."):
-                try:
-                    payload = {"term": term, "user_id": user_id}
-                    response = requests.post(f"{API_URL}/define", json=payload)
-                    
-                    if response.status_code == 200:
-                        data = response.json()
-                        st.markdown(f"### Definition for **{term}**")
-                        st.info(data.get("definition", "Definition not found."))
                     else:
                         st.error(f"Error {response.status_code}: {response.text}")
                 
