@@ -6,6 +6,11 @@ from src.rag_system.loader import load_and_split_pdf, transcribe_and_split_audio
 from src.rag_system.vector_store import add_documents_to_store
 from src.rag_system.graph import get_agent_runnable, AgentState
 from src.rag_system.search_chain import get_rag_search_runnable
+from src.rag_system.prioritize_chain import get_prioritize_runnable
+from fastapi import BackgroundTasks
+from pydantic import BaseModel, Field
+import uuid
+from src.rag_system.exam_chain import generate_exam_and_pdf
 
 # setup
 router = APIRouter()
@@ -32,9 +37,41 @@ class SearchRequest(BaseModel):
     user_id: str
 
 class SearchResponse(BaseModel):
-    results: str  # This will be the formatted Markdown string
+    results: str 
     user_id: str
     topic: str
+
+class PrioritizeRequest(BaseModel):
+    user_id: str
+
+class PrioritizeResponse(BaseModel):
+    topics_list: str
+    user_id: str
+
+class ExamJob(BaseModel):
+    job_id: str
+    status: str = "pending"
+    download_url: str | None = None
+    error: str | None = None
+
+class ExamRequest(BaseModel):
+    user_id: str
+    num_questions: int = Field(default=20, gt=0, le=50)
+
+exam_jobs: dict[str, ExamJob] = {}
+
+def run_exam_task(job_id: str, user_id: str, num_questions: int):
+    """
+    The function that runs in the background.
+    It updates the job status in our 'exam_jobs' dict.
+    """
+    try:
+        download_url = generate_exam_and_pdf(user_id, num_questions)
+        exam_jobs[job_id].status = "complete"
+        exam_jobs[job_id].download_url = download_url
+    except Exception as e:
+        exam_jobs[job_id].status = "error"
+        exam_jobs[job_id].error = str(e)
 
 @router.post("/upload", response_model=UploadResponse)
 async def upload_pdf(
@@ -176,3 +213,65 @@ async def find_problems(request: SearchRequest):
     
     except Exception as e:
         raise HTTPException(500, f"Error finding problems: {str(e)}")
+    
+@router.post("/prioritize", response_model=PrioritizeResponse)
+async def prioritize_topics(request: PrioritizeRequest):
+    """
+    Analyzes ALL documents for a user to find the most important topics.
+    This is a heavy, one-time operation.
+    """
+    try:
+        # getting the runnable
+        chain = get_prioritize_runnable()
+        
+        # defining the input
+        input_data = {"user_id": request.user_id}
+        
+        # invoking the chain
+        topics_list = chain.invoke(input_data)
+        
+        return PrioritizeResponse(
+            topics_list=topics_list,
+            user_id=request.user_id
+        )
+    
+    except Exception as e:
+        raise HTTPException(500, f"Error prioritizing topics: {e}")
+    
+@router.post("/generate-test", response_model=ExamJob)
+async def start_exam_generation(
+    request: ExamRequest,
+    background_tasks: BackgroundTasks
+):
+    """
+    Starts a background job to generate a PDF exam.
+    Returns a job_id to check status.
+    """
+    
+    # creating a unique job id
+    job_id = str(uuid.uuid4())
+    
+    # creating the job function
+    job = ExamJob(job_id=job_id, status="running")
+    exam_jobs[job_id] = job
+    
+    # adding the heavy lift function
+    background_tasks.add_task(
+        run_exam_task, 
+        job_id, 
+        request.user_id, 
+        request.num_questions
+    )
+    
+    # returning the job status
+    return job
+
+@router.get("/generate-test/status/{job_id}", response_model=ExamJob)
+async def get_exam_job_status(job_id: str):
+    """
+    Checks the status of a running exam generation job.
+    """
+    job = exam_jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job

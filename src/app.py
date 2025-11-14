@@ -4,6 +4,7 @@ import json
 import time
 
 API_URL = "http://127.0.0.1:8000/v1/study"
+BASE_URL = "http://127.0.0.1:8000"
 
 st.set_page_config(
     page_title="Sturdy Study AI",
@@ -11,7 +12,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
 st.markdown("""
 <style>
     .stChatMessage {font-family: 'Inter', sans-serif;}
@@ -20,7 +20,6 @@ st.markdown("""
     div[data-testid="stTabs"] {margin-top: -40px;}
 </style>
 """, unsafe_allow_html=True)
-
 st.title("🎓 Sturdy Study: The Agentic Tutor")
 
 with st.sidebar:
@@ -35,15 +34,12 @@ with st.sidebar:
     if uploaded_pdf:
         if st.button("Process PDF", type="primary"):
             with st.status("Ingesting PDF...", expanded=True) as status:
-                st.write("Uploading to server...")
-                files = {"file": (uploaded_pdf.name, uploaded_pdf, "application/pdf")}
                 try:
+                    files = {"file": (uploaded_pdf.name, uploaded_pdf, "application/pdf")}
                     response = requests.post(f"{API_URL}/upload", files=files, data={"user_id": user_id})
                     if response.status_code == 200:
                         status.update(label="PDF Indexed Successfully!", state="complete", expanded=False)
-                        st.success(f"Added {response.json()['documents_added']} chunks to memory.")
                     else:
-                        status.update(label="Error", state="error")
                         st.error(response.text)
                 except Exception as e:
                     st.error(f"Connection Error: {e}")
@@ -53,13 +49,11 @@ with st.sidebar:
     if uploaded_audio:
         if st.button("Transcribe & Index Audio"):
             with st.status("Listening & Transcribing...", expanded=True) as status:
-                st.write("Sending to Whisper model...")
-                files = {"file": (uploaded_audio.name, uploaded_audio, uploaded_audio.type)}
                 try:
+                    files = {"file": (uploaded_audio.name, uploaded_audio, uploaded_audio.type)}
                     response = requests.post(f"{API_URL}/upload-audio", files=files, data={"user_id": user_id})
                     if response.status_code == 200:
                         status.update(label="Audio Transcribed!", state="complete", expanded=False)
-                        st.success("Lecture audio added to knowledge base.")
                     else:
                         st.error(response.text)
                 except Exception as e:
@@ -73,81 +67,106 @@ with st.sidebar:
 
 tab1, tab2, tab3 = st.tabs([
     "**💬 Chat with Docs**", 
-    "**🔎 Find Practice Problems**"
+    "**🔎 Find Practice Problems**",
+    "**📝 Test Yourself (MCQs)**"
 ])
 
 with tab1:
     st.subheader("Your AI Tutor")
-    st.caption("Ask questions, summarize topics, or ask for a quiz based on your uploaded materials.")
-
+    st.caption("Ask questions, summarize topics, or ask for a quick quiz.")
     if "messages" not in st.session_state:
         st.session_state.messages = []
-
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-
     if prompt := st.chat_input("Ask a question about your documents..."):
-        
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
-
         with st.chat_message("assistant"):
             with st.spinner("Agent is thinking..."):
                 try:
                     payload = {"question": prompt, "user_id": user_id}
                     response = requests.post(f"{API_URL}/chat", json=payload)
-                    
                     if response.status_code == 200:
                         data = response.json()
-                        
                         if data.get("quiz"):
-                            content = "I've generated a quiz for you! See below."
-                            st.session_state.messages.append({"role": "assistant", "content": content})
-                            st.markdown("### 📝 Pop Quiz Generated")
-                            try:
-                                quiz_json = json.loads(data["quiz"])
-                                for i, q in enumerate(quiz_json.get("questions", [])):
-                                    st.markdown(f"**{i+1}. {q['question_text']}**")
-                                    st.radio(f"Options for Q{i+1}", q["options"], key=f"q_{i}", label_visibility="collapsed")
-                                    with st.expander(f"Reveal Answer {i+1}"):
-                                        st.success(f"Correct: {q['correct_answer']}")
-                            except Exception as e:
-                                st.error(f"Failed to parse quiz JSON: {e}")
-                                st.markdown(data["quiz"])
-                        
+                            st.markdown("### 📝 Pop Quiz!")
+                            st.session_state.messages.append({"role": "assistant", "content": "I've generated a quiz for you above!"})
                         elif data.get("answer"):
                             content = data["answer"]
                             st.markdown(content)
                             st.session_state.messages.append({"role": "assistant", "content": content})
-
                     else:
                         st.error(f"Error {response.status_code}: {response.text}")
-                
                 except Exception as e:
                     st.error(f"Connection Error: {e}")
+
 
 with tab2:
     st.subheader("Find Practice Problems on the Web")
     st.caption("This tool uses your course context to find *relevant* external problems.")
-    
     topic = st.text_input("Enter your topic (e.g., 'gradient descent')", key="problem_topic")
-    
     if st.button("Search for Problems", type="primary"):
-        if not topic:
-            st.error("Please enter a topic.")
+        with st.spinner(f"Searching the web for '{topic}' problems..."):
+            try:
+                payload = {"topic": topic, "user_id": user_id}
+                response = requests.post(f"{API_URL}/find-problems", json=payload)
+                if response.status_code == 200:
+                    data = response.json()
+                    st.markdown(data.get("results", "No results found."))
+                else:
+                    st.error(f"Error {response.status_code}: {response.text}")
+            except Exception as e:
+                st.error(f"Connection Error: {e}")
+
+with tab3:
+    st.subheader("Generate a Practice Exam (PDF)")
+    st.caption("This agent will analyze all your course materials to create a unique exam.")
+    
+    num_q = st.number_input(
+        "How many questions?", 
+        min_value=5, 
+        max_value=50, 
+        value=10
+    )
+    
+    if st.button("Generate Exam", type="primary"):
+        if not user_id:
+            st.error("Please enter a User/Course ID in the sidebar first.")
         else:
-            with st.spinner(f"Searching the web for '{topic}' problems..."):
+            with st.spinner("Starting exam generation... This may take 1-2 minutes."):
                 try:
-                    payload = {"topic": topic, "user_id": user_id}
-                    response = requests.post(f"{API_URL}/find-problems", json=payload)
+                    payload = {"user_id": user_id, "num_questions": num_q}
+                    response = requests.post(f"{API_URL}/generate-test", json=payload)
                     
-                    if response.status_code == 200:
-                        data = response.json()
-                        st.markdown(data.get("results", "No results found."))
+                    if response.status_code != 200:
+                        st.error(f"Error starting job: {response.text}")
                     else:
-                        st.error(f"Error {response.status_code}: {response.text}")
-                
+                        job_id = response.json().get("job_id")
+                        st.success(f"Job started! Job ID: {job_id}")
+                        
+                        with st.spinner(f"Generating {num_q} questions... This is a heavy task, please wait."):
+                            status = "running"
+                            while status == "running" or status == "pending":
+                                time.sleep(5)
+                                status_response = requests.get(f"{API_URL}/generate-test/status/{job_id}")
+                                if status_response.status_code == 200:
+                                    job = status_response.json()
+                                    status = job.get("status")
+                                    if status == "complete":
+                                        st.success("✅ Exam Generated!")
+                                        download_url = job.get("download_url")
+                                        full_download_url = f"{BASE_URL}{download_url}"
+                                        
+                                        st.markdown(f"Your exam is ready to download:")
+                                        st.markdown(f"➡️ [**Download Your Exam PDF**]({full_download_url})", unsafe_allow_html=True)
+                                        
+                                    elif status == "error":
+                                        st.error(f"Job failed: {job.get('error')}")
+                                else:
+                                    st.error("Failed to get job status.")
+                                    break
+            
                 except Exception as e:
                     st.error(f"Connection Error: {e}")
