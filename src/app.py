@@ -22,6 +22,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 st.title("🎓 Sturdy Study: The Agentic Tutor")
 
+def handle_api_error(response):
+    """Checks for HTTP errors and raises a detailed exception."""
+    response.raise_for_status() # This will raise an HTTPError for 4xx/5xx
+
 with st.sidebar:
     st.header("⚙️ Course Setup")
     user_id = st.text_input("User/Course ID", value="demo_course_101", help="Unique ID for your vector store")
@@ -65,14 +69,15 @@ with st.sidebar:
             st.session_state.messages = []
         st.rerun()
 
-tab1, tab2, tab3 = st.tabs([
+tab1, tab2, tab3, tab4 = st.tabs([
     "**💬 Chat with Docs**", 
     "**🔎 Find Practice Problems**",
-    "**📝 Test Yourself (MCQs)**"
+    "**📝 Test Yourself (MCQs)**",
+    "**👩‍🏫 Guided Session**"
 ])
 
 with tab1:
-    st.subheader("Your AI Tutor")
+    st.subheader("Your AI Assistant")
     st.caption("Ask questions, summarize topics, or ask for a quick quiz.")
     if "messages" not in st.session_state:
         st.session_state.messages = []
@@ -81,55 +86,50 @@ with tab1:
             st.markdown(message["content"])
     if prompt := st.chat_input("Ask a question about your documents..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+        with st.chat_message("user"): st.markdown(prompt)
         with st.chat_message("assistant"):
             with st.spinner("Agent is thinking..."):
                 try:
                     payload = {"question": prompt, "user_id": user_id}
                     response = requests.post(f"{API_URL}/chat", json=payload)
-                    if response.status_code == 200:
-                        data = response.json()
-                        if data.get("quiz"):
-                            st.markdown("### 📝 Pop Quiz!")
-                            st.session_state.messages.append({"role": "assistant", "content": "I've generated a quiz for you above!"})
-                        elif data.get("answer"):
-                            content = data["answer"]
-                            st.markdown(content)
-                            st.session_state.messages.append({"role": "assistant", "content": content})
-                    else:
-                        st.error(f"Error {response.status_code}: {response.text}")
-                except Exception as e:
+                    handle_api_error(response)
+                    data = response.json()
+                    
+                    if data.get("quiz"):
+                        content = "I've generated a quiz for you!"
+                        st.markdown(content)
+                        
+                    elif data.get("answer"):
+                        content = data["answer"]
+                        st.markdown(content)
+                    st.session_state.messages.append({"role": "assistant", "content": content})
+                except requests.exceptions.HTTPError as e:
+                    st.error(f"Error from server: {e.response.text}")
+                except Exception as e: 
                     st.error(f"Connection Error: {e}")
-
 
 with tab2:
     st.subheader("Find Practice Problems on the Web")
     st.caption("This tool uses your course context to find *relevant* external problems.")
     topic = st.text_input("Enter your topic (e.g., 'gradient descent')", key="problem_topic")
     if st.button("Search for Problems", type="primary"):
-        with st.spinner(f"Searching the web for '{topic}' problems..."):
+        with st.spinner(f"Searching the web for '{topic}'..."):
             try:
                 payload = {"topic": topic, "user_id": user_id}
                 response = requests.post(f"{API_URL}/find-problems", json=payload)
-                if response.status_code == 200:
-                    data = response.json()
-                    st.markdown(data.get("results", "No results found."))
-                else:
-                    st.error(f"Error {response.status_code}: {response.text}")
-            except Exception as e:
+                handle_api_error(response)
+                data = response.json()
+                st.markdown(data.get("results", "No results found."))
+            except requests.exceptions.HTTPError as e:
+                st.error(f"Error from server: {e.response.text}")
+            except Exception as e: 
                 st.error(f"Connection Error: {e}")
 
 with tab3:
     st.subheader("Generate a Practice Exam (PDF)")
     st.caption("This agent will analyze all your course materials to create a unique exam.")
     
-    num_q = st.number_input(
-        "How many questions?", 
-        min_value=5, 
-        max_value=50, 
-        value=10
-    )
+    num_q = st.number_input("How many questions?", min_value=5, max_value=50, value=10)
     
     if st.button("Generate Exam", type="primary"):
         if not user_id:
@@ -139,34 +139,114 @@ with tab3:
                 try:
                     payload = {"user_id": user_id, "num_questions": num_q}
                     response = requests.post(f"{API_URL}/generate-test", json=payload)
+                    handle_api_error(response) # Check for 4xx/5xx
                     
-                    if response.status_code != 200:
-                        st.error(f"Error starting job: {response.text}")
-                    else:
-                        job_id = response.json().get("job_id")
-                        st.success(f"Job started! Job ID: {job_id}")
-                        
-                        with st.spinner(f"Generating {num_q} questions... This is a heavy task, please wait."):
-                            status = "running"
-                            while status == "running" or status == "pending":
-                                time.sleep(5)
-                                status_response = requests.get(f"{API_URL}/generate-test/status/{job_id}")
-                                if status_response.status_code == 200:
-                                    job = status_response.json()
-                                    status = job.get("status")
-                                    if status == "complete":
-                                        st.success("✅ Exam Generated!")
-                                        download_url = job.get("download_url")
-                                        full_download_url = f"{BASE_URL}{download_url}"
-                                        
-                                        st.markdown(f"Your exam is ready to download:")
-                                        st.markdown(f"➡️ [**Download Your Exam PDF**]({full_download_url})", unsafe_allow_html=True)
-                                        
-                                    elif status == "error":
-                                        st.error(f"Job failed: {job.get('error')}")
-                                else:
-                                    st.error("Failed to get job status.")
-                                    break
+                    job_id = response.json().get("job_id")
+                    st.success(f"Job started! Job ID: {job_id}")
+                    
+                    with st.spinner(f"Generating {num_q} questions... This is a heavy task, please wait."):
+                        status = "running"
+                        while status == "running" or status == "pending":
+                            time.sleep(5)
+                            status_response = requests.get(f"{API_URL}/generate-test/status/{job_id}")
+                            handle_api_error(status_response)
+                            
+                            job = status_response.json()
+                            status = job.get("status")
+                            if status == "complete":
+                                st.success("✅ Exam Generated!")
+                                full_download_url = f"{BASE_URL}{job.get('download_url')}"
+                                st.markdown(f"➡️ [**Download Your Exam PDF**]({full_download_url})", unsafe_allow_html=True)
+                                
+                            elif status == "error":
+                                st.error(f"Job failed: {job.get('error')}")
+                                break
             
-                except Exception as e:
+                except requests.exceptions.HTTPError as e:
+                    st.error(f"Error from server: {e.response.text}")
+                except Exception as e: 
                     st.error(f"Connection Error: {e}")
+
+with tab4:
+    st.subheader("👩‍🏫 AI-Guided Socratic Session")
+    
+    if "guided_messages" not in st.session_state:
+        st.session_state.guided_messages = []
+    if "guided_topic" not in st.session_state:
+        st.session_state.guided_topic = None
+
+    if st.session_state.guided_topic is None:
+        st.caption("The AI will ask you questions to build your knowledge from the ground up.")
+        topic = st.text_input("What topic do you want to master today?", key="guided_topic_input")
+        
+        if st.button("Start Guided Session", type="primary"):
+            if not topic:
+                st.error("Please enter a topic.")
+            else:
+                with st.spinner("Tutor is preparing your first question..."):
+                    try:
+                        payload = {
+                            "user_id": user_id,
+                            "topic": topic,
+                            "chat_history": [],
+                            "user_question": "Let's start."
+                        }
+                        response = requests.post(f"{API_URL}/guided-chat", json=payload)
+                        handle_api_error(response)
+                        
+                        ai_message = response.json().get("ai_message")
+                        
+                        st.session_state.guided_topic = topic
+                        st.session_state.guided_messages = [{"role": "assistant", "content": ai_message}]
+                        st.rerun()
+
+                    except requests.exceptions.HTTPError as e:
+                        st.error(f"Error from server: {e.response.text}")
+                        st.session_state.guided_topic = None
+                    except Exception as e:
+                        st.error(f"Connection Error: {e}")
+                        st.session_state.guided_topic = None
+
+    else:
+        st.info(f"**Current Topic:** {st.session_state.guided_topic} | [End Session](?end_session=true)", icon="🧠")
+        
+        if st.query_params.get("end_session") == "true":
+            st.session_state.guided_topic = None
+            st.session_state.guided_messages = []
+            st.query_params.clear()
+            st.rerun()
+
+        for message in st.session_state.guided_messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+        
+        if prompt := st.chat_input(f"Answer the tutor's question about {st.session_state.guided_topic}..."):
+            st.session_state.guided_messages.append({"role": "user", "content": prompt})
+            with st.chat_message("user"):
+                st.markdown(prompt)
+            
+            with st.chat_message("assistant"):
+                with st.spinner("Tutor is thinking..."):
+                    try:
+                        api_history = []
+                        for msg in st.session_state.guided_messages:
+                            api_history.append({"role": msg["role"], "content": msg["content"]})
+
+                        payload = {
+                            "user_id": user_id,
+                            "topic": st.session_state.guided_topic,
+                            "chat_history": api_history,
+                            "user_question": prompt
+                        }
+                        response = requests.post(f"{API_URL}/guided-chat", json=payload)
+                        handle_api_error(response)
+                        
+                        ai_message = response.json().get("ai_message")
+                        
+                        st.markdown(ai_message)
+                        st.session_state.guided_messages.append({"role": "assistant", "content": ai_message})
+                    
+                    except requests.exceptions.HTTPError as e:
+                        st.error(f"Error from server: {e.response.text}")
+                    except Exception as e:
+                        st.error(f"Connection Error: {e}")

@@ -11,6 +11,8 @@ from fastapi import BackgroundTasks
 from pydantic import BaseModel, Field
 import uuid
 from src.rag_system.exam_chain import generate_exam_and_pdf
+from src.rag_system.tutor_chain import get_tutor_runnable
+from typing import List, Dict, Any
 
 # setup
 router = APIRouter()
@@ -57,6 +59,15 @@ class ExamJob(BaseModel):
 class ExamRequest(BaseModel):
     user_id: str
     num_questions: int = Field(default=20, gt=0, le=50)
+
+class GuidedChatRequest(BaseModel):
+    user_id: str
+    topic: str
+    chat_history: List[Dict[str, Any]] # e.g., [{"role": "user", "content": "..."}, ...]
+    user_question: str
+
+class GuidedChatResponse(BaseModel):
+    ai_message: str
 
 exam_jobs: dict[str, ExamJob] = {}
 
@@ -247,7 +258,7 @@ async def start_exam_generation(
     Starts a background job to generate a PDF exam.
     Returns a job_id to check status.
     """
-    
+
     # creating a unique job id
     job_id = str(uuid.uuid4())
     
@@ -275,3 +286,28 @@ async def get_exam_job_status(job_id: str):
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return job
+
+@router.post("/guided-chat", response_model=GuidedChatResponse)
+async def guided_chat_session(request: GuidedChatRequest):
+    """
+    Manages a stateful, Socratic guided chat session.
+    """
+    try:
+        # getting the runnable
+        chain = get_tutor_runnable()
+        
+        # defining the input
+        input_data = {
+            "user_id": request.user_id,
+            "topic": request.topic,
+            "chat_history": request.chat_history,
+            "user_question": request.user_question
+        }
+        
+        #invoking the chain
+        ai_message = chain.invoke(input_data)
+        
+        return GuidedChatResponse(ai_message=ai_message)
+    
+    except Exception as e:
+        raise HTTPException(500, f"Error in guided session: {str(e)}")
