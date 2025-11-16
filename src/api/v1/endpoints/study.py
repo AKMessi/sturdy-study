@@ -13,6 +13,7 @@ import uuid
 from src.rag_system.exam_chain import generate_exam_and_pdf
 from src.rag_system.tutor_chain import get_tutor_runnable
 from typing import List, Dict, Any
+from src.rag_system.map_chain import get_map_runnable
 
 # setup
 router = APIRouter()
@@ -68,6 +69,13 @@ class GuidedChatRequest(BaseModel):
 
 class GuidedChatResponse(BaseModel):
     ai_message: str
+
+class MapRequest(BaseModel):
+    user_id: str
+
+class MapResponse(BaseModel):
+    dot_string: str # This will be the "digraph G { ... }" text
+    user_id: str
 
 exam_jobs: dict[str, ExamJob] = {}
 
@@ -311,3 +319,28 @@ async def guided_chat_session(request: GuidedChatRequest):
     
     except Exception as e:
         raise HTTPException(500, f"Error in guided session: {str(e)}")
+    
+@router.post("/generate-map", response_model=MapResponse)
+async def generate_concept_map(request: MapRequest):
+    """
+    Analyzes ALL documents for a user to generate a Graphviz DOT
+    string for a concept map.
+    """
+    
+    try:
+        chain = get_map_runnable()
+        
+        input_data = {"user_id": request.user_id}
+        
+        dot_string = chain.invoke(input_data)
+        
+        if not dot_string.strip().startswith("digraph"):
+            raise Exception("Failed to generate valid DOT string from LLM.")
+        
+        return MapResponse(
+            dot_string=dot_string,
+            user_id=request.user_id
+        )
+    
+    except Exception as e:
+        raise HTTPException(500, f"Error generating map: {str(e)}")
