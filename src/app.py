@@ -62,6 +62,26 @@ with st.sidebar:
                         st.error(response.text)
                 except Exception as e:
                     st.error(f"Connection Error: {e}")
+
+    st.markdown("---")
+    st.subheader("📺 Add YouTube Video")
+    yt_url = st.text_input("Paste YouTube Link")
+    if st.button("Process Video"):
+        if yt_url:
+            with st.status("Processing YouTube Video...", expanded=True) as status:
+                try:
+                    st.write("Analyzing video...")
+                    payload = {"url": yt_url, "user_id": user_id}
+                    response = requests.post(f"{API_URL}/process-youtube", json=payload)
+                    
+                    if response.status_code == 200:
+                        status.update(label="Video Added!", state="complete", expanded=False)
+                        st.success(f"Successfully indexed video content.")
+                    else:
+                        status.update(label="Error", state="error")
+                        st.error(response.text)
+                except Exception as e:
+                    st.error(f"Connection Error: {e}")
     
     st.divider()
     if st.button("Clear Chat History"):

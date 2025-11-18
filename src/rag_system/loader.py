@@ -1,13 +1,22 @@
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from typing import List
+from typing import List, Optional
 from langchain.docstore.document import Document
 import os
+import re
+from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled
+import yt_dlp
 import whisper
 
 print("[Whisper] Initializing Whisper transcription model...")
 whisper_model = whisper.load_model("base")
 print("[Whisper] Whisper model loaded.")
+
+def get_youtube_video_id(url: str) -> Optional[str]:
+    """Extracts video ID from various YouTube URL formats."""
+    pattern = r'(?:v=|\/)([0-9A-Za-z_-]{11}).*'
+    match = re.search(pattern, url)
+    return match.group(1) if match else None
 
 def load_and_split_pdf(file_path: str) -> List[Document]:
     """
@@ -52,7 +61,7 @@ def transcribe_and_split_audio(file_path: str, source_filename: str) -> List[Doc
     """
     Transcribes an audio file using Whisper and splits the text into chunks.
     """
-    
+
     try:
         # transcribing the audio
         print(f"[Whisper] Transcribing {file_path}...")
@@ -83,3 +92,89 @@ def transcribe_and_split_audio(file_path: str, source_filename: str) -> List[Doc
     except Exception as e:
         print(f"Error transcribing audio {file_path}: {e}")
         raise e
+    
+def fetch_youtube_transcript(video_id: str) -> Optional[str]:
+    """
+    Tries to fetch the transcript directly from YouTube.
+    Returns the text string if found, or None.
+    """
+    
+    print(f"[YouTube] Attempting to fetch transcript for {video_id}...")
+    try:
+        transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
+        
+        full_text = " ".join([t['text'] for t in transcript_list])
+        print("[YouTube] Transcript fetched successfully!")
+        return full_text
+    except Exception as e:
+        print(f"[YouTube] No existing transcript found: {e}")
+        return None
+
+# the slow path (download + whisper)
+def download_youtube_audio(url: str, output_dir: str = "temp_uploads") -> str:
+    """
+    Downloads the audio of a YouTube video using yt-dlp.
+    Returns the path to the downloaded file.
+    """
+    print(f"[YouTube] Downloading audio from {url}...")
+    
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': os.path.join(output_dir, '%(id)s.%(ext)s'),
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+        'quiet': True,
+        'no_warnings': True
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=True)
+        filename = ydl.prepare_filename(info)
+        final_filename = filename.rsplit('.', 1)[0] + '.mp3'
+        
+    print(f"[YouTube] Download complete: {final_filename}")
+    return final_filename
+
+# the main handler function
+def process_youtube_video(url: str) -> List[Document]:
+    """
+    Orchestrates the YouTube processing:
+    1. Try fetching transcript (Fast).
+    2. If fail, download audio & Whisper it (Slow).
+    """
+    video_id = get_youtube_video_id(url)
+    if not video_id:
+        raise ValueError("Invalid YouTube URL")
+
+    # trying fast path
+    transcript_text = fetch_youtube_transcript(video_id)
+
+    # if fast path failed, try slow path
+    if not transcript_text:
+        print("[YouTube] Falling back to Whisper transcription...")
+        try:
+            audio_path = download_youtube_audio(url)
+            
+            transcription = whisper_model.transcribe(audio_path, fp16=False)
+            transcript_text = transcription.get("text")
+            
+            if os.path.exists(audio_path):
+                os.remove(audio_path)
+                
+        except Exception as e:
+            raise Exception(f"Failed to process YouTube video: {e}")
+
+    if not transcript_text:
+         raise ValueError("Could not extract any text from this video.")
+
+    # splitting text into chunks
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    doc = Document(
+        page_content=transcript_text,
+        metadata={"source": f"YouTube: {url}"}
+    )
+    
+    return text_splitter.split_documents([doc])

@@ -14,6 +14,7 @@ from src.rag_system.exam_chain import generate_exam_and_pdf
 from src.rag_system.tutor_chain import get_tutor_runnable
 from typing import List, Dict, Any
 from src.rag_system.map_chain import get_map_runnable
+from src.rag_system.loader import process_youtube_video
 
 # setup
 router = APIRouter()
@@ -75,6 +76,10 @@ class MapRequest(BaseModel):
 
 class MapResponse(BaseModel):
     dot_string: str # This will be the "digraph G { ... }" text
+    user_id: str
+
+class YouTubeRequest(BaseModel):
+    url: str
     user_id: str
 
 exam_jobs: dict[str, ExamJob] = {}
@@ -326,7 +331,7 @@ async def generate_concept_map(request: MapRequest):
     Analyzes ALL documents for a user to generate a Graphviz DOT
     string for a concept map.
     """
-    
+
     try:
         chain = get_map_runnable()
         
@@ -344,3 +349,24 @@ async def generate_concept_map(request: MapRequest):
     
     except Exception as e:
         raise HTTPException(500, f"Error generating map: {str(e)}")
+    
+@router.post("/process-youtube", response_model=UploadResponse)
+async def process_youtube(request: YouTubeRequest):
+    """
+    Process a YouTube video (Transcript or Whisper) and add to vector DB.
+    """
+    try:
+        # process the video
+        split_docs = process_youtube_video(request.url)
+        
+        # adding to vector store
+        add_documents_to_store(split_docs, collection_name=request.user_id)
+        
+        return UploadResponse(
+            filename=request.url,
+            message="YouTube video processed and added to knowledge base.",
+            documents_added=len(split_docs)
+        )
+        
+    except Exception as e:
+        raise HTTPException(500, f"Error processing YouTube video: {str(e)}")
