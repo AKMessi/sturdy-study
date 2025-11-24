@@ -1,5 +1,5 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.prompts import ChatPromptTemplate, PromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from langchain.schema.runnable import RunnableMap, RunnablePassthrough
 from langchain.schema.output_parser import StrOutputParser
 from src.rag_system.vector_store import get_retriever
