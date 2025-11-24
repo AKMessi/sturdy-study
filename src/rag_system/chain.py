@@ -5,7 +5,6 @@ from langchain_core.output_parsers import StrOutputParser
 from src.rag_system.vector_store import get_retriever
 from langchain_core.vectorstores.base import VectorStoreRetriever
 from src.core.config import settings
-from langchain.prompts import ChatPromptTemplate, PromptTemplate
 
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-pro",

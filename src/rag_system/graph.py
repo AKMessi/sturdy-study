@@ -3,8 +3,8 @@ from langgraph.graph import StateGraph, END
 from src.rag_system.vector_store import get_retriever
 from src.rag_system.chain import create_rag_chain, create_quiz_chain
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.schema.output_parser import StrOutputParser
-from langchain.prompts import PromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import PromptTemplate
 from src.core.config import settings
 
 # defining the agent state
