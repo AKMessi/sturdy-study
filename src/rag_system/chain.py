@@ -3,7 +3,7 @@ from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from langchain_core.runnables import RunnableMap, RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from src.rag_system.vector_store import get_retriever
-from langchain.vectorstores.base import VectorStoreRetriever
+from langchain_core.vectorstores.base import VectorStoreRetriever
 from src.core.config import settings
 from langchain.prompts import ChatPromptTemplate, PromptTemplate
 
