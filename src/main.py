@@ -2,13 +2,22 @@ from fastapi import FastAPI
 from src.core.config import settings
 import os
 from fastapi.staticfiles import StaticFiles
-import os
+from fastapi.middleware.cors import CORSMiddleware # <--- NEW IMPORT
 from src.api.v1.endpoints import study 
 
 app = FastAPI(
     title="Student SaaS AI Agent",
     description="A production-ready API for our study agent.",
     version="0.1.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    # In production, replace ["*"] with your actual frontend domain
+    allow_origins=["http://localhost:3000", "https://your-app.vercel.app", "https://sturdystudy.online"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
@@ -23,7 +32,4 @@ app.include_router(study.router, prefix="/v1/study", tags=["Study API"])
 
 @app.get("/", tags=["Health Check"])
 async def root():
-    """
-    A simple health check endpoint.
-    """
     return {"status": "ok", "message": "Service is running."}
