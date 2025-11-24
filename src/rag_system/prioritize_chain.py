@@ -1,8 +1,8 @@
 from src.core.config import settings
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.prompts import PromptTemplate
-from langchain.schema.output_parser import StrOutputParser
-from langchain.schema.runnable import RunnableMap
+from langchain.schema import StrOutputParser
+from langchain.schema import RunnableMap
 from langchain_core.runnables import RunnableLambda
 from src.rag_system.vector_store import get_all_documents
 
