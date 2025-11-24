@@ -178,31 +178,33 @@ export function TutorTab({ userId }: TutorTabProps) {
   }
 
   // UI State 2: Active Session
-  return (
-    <div className="flex flex-col h-[calc(100vh-12rem)]">
-      {/* Top Bar */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-card shrink-0">
-        <div className="flex items-center gap-2">
-          <GraduationCap className="h-5 w-5 text-primary" />
-          <div>
-            <span className="text-sm text-muted-foreground">Current Topic:</span>
-            <span className="ml-2 font-semibold">{topic}</span>
-          </div>
+  // UI State 2: Active Session
+return (
+  <div className="flex flex-col h-full">
+    {/* Top Bar */}
+    <div className="shrink-0 flex items-center justify-between p-4 border-b border-border bg-card">
+      <div className="flex items-center gap-2">
+        <GraduationCap className="h-5 w-5 text-primary" />
+        <div>
+          <span className="text-sm text-muted-foreground">Current Topic:</span>
+          <span className="ml-2 font-semibold">{topic}</span>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleEndSession}
-          disabled={isLoading}
-        >
-          <X className="h-4 w-4 mr-2" />
-          End Session
-        </Button>
       </div>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleEndSession}
+        disabled={isLoading}
+      >
+        <X className="h-4 w-4 mr-2" />
+        End Session
+      </Button>
+    </div>
 
-      {/* Messages Area */}
-      <ScrollArea className="flex-1 px-1">
-        <div className="space-y-4 p-4 pb-20">
+    {/* Messages Area */}
+    <div className="flex-1 overflow-hidden">
+      <ScrollArea className="h-full">
+        <div className="space-y-4 p-4">
           {messages.length === 0 && (
             <div className="flex items-center justify-center h-full text-muted-foreground text-sm min-h-[200px]">
               Your tutor will guide you through learning {topic}
@@ -241,35 +243,36 @@ export function TutorTab({ userId }: TutorTabProps) {
           <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
+    </div>
 
-      {/* Input Area */}
-      <div className="mt-auto border-t border-border p-4 bg-background">
-        <div className="flex gap-2 items-end">
-          <textarea
-            ref={textareaRef}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Answer the tutor's question or ask your own..."
-            disabled={isLoading || !userId}
-            className={cn(
-              "flex-1 min-h-[44px] max-h-[120px] resize-none rounded-md border border-input bg-background px-3 py-2 text-sm",
-              "placeholder:text-muted-foreground",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-              "disabled:cursor-not-allowed disabled:opacity-50"
-            )}
-            rows={1}
-          />
-          <Button
-            onClick={handleSend}
-            disabled={!inputValue.trim() || isLoading || !userId}
-            size="icon"
-            className="shrink-0 h-[44px] w-[44px]"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
-        </div>
+    {/* Input Area */}
+    <div className="shrink-0 border-t border-border p-4 bg-background">
+      <div className="flex gap-2 items-end">
+        <textarea
+          ref={textareaRef}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Answer the tutor's question or ask your own..."
+          disabled={isLoading || !userId}
+          className={cn(
+            "flex-1 min-h-[44px] max-h-[120px] resize-none rounded-md border border-input bg-background px-3 py-2 text-sm",
+            "placeholder:text-muted-foreground",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+            "disabled:cursor-not-allowed disabled:opacity-50"
+          )}
+          rows={1}
+        />
+        <Button
+          onClick={handleSend}
+          disabled={!inputValue.trim() || isLoading || !userId}
+          size="icon"
+          className="shrink-0 h-[44px] w-[44px]"
+        >
+          <Send className="h-4 w-4" />
+        </Button>
       </div>
     </div>
-  );
+  </div>
+);
 }

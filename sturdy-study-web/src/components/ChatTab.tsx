@@ -35,6 +35,10 @@ export function ChatTab({ userId }: ChatTabProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  useEffect(() => {
+    setMessages([]);
+  }, [userId]);
+
   // --- NEW: Reset chat when course changes ---
   // This is the critical fix for the Composite Key update
   useEffect(() => {
@@ -140,11 +144,12 @@ export function ChatTab({ userId }: ChatTabProps) {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)]"> {/* Fixed height constraint */}
-      
-      {/* Messages Area */}
-      <ScrollArea className="flex-1 px-1">
-        <div className="space-y-4 p-4 pb-20"> {/* Added padding bottom */}
+  <div className="flex flex-col h-full">
+    
+    {/* Messages Area */}
+    <div className="flex-1 overflow-hidden">
+      <ScrollArea className="h-full">
+        <div className="space-y-4 p-4">
           {messages.length === 0 && (
             <div className="flex items-center justify-center h-full text-muted-foreground text-sm min-h-[200px]">
               Start a conversation by asking a question or requesting a quiz
@@ -187,38 +192,38 @@ export function ChatTab({ userId }: ChatTabProps) {
           <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
+    </div>
 
-      {/* Input Area */}
-      <div className="mt-auto border-t border-border p-4 bg-background">
-        <div className="flex gap-2 items-end">
-          <textarea
-            ref={textareaRef}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask a question or request a quiz..."
-            disabled={isLoading || !userId}
-            className={cn(
-              "flex-1 min-h-[44px] max-h-[120px] resize-none rounded-md border border-input bg-background px-3 py-2 text-sm",
-              "placeholder:text-muted-foreground",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-              "disabled:cursor-not-allowed disabled:opacity-50"
-            )}
-            rows={1}
-          />
-          <Button
-            onClick={handleSend}
-            disabled={!inputValue.trim() || isLoading || !userId}
-            size="icon"
-            className="shrink-0 h-[44px] w-[44px]"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
-        </div>
+    {/* Input Area - Fixed at bottom */}
+    <div className="shrink-0 border-t border-border p-4 bg-background">
+      <div className="flex gap-2 items-end">
+        <textarea
+          ref={textareaRef}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Ask a question or request a quiz..."
+          disabled={isLoading || !userId}
+          className={cn(
+            "flex-1 min-h-[44px] max-h-[120px] resize-none rounded-md border border-input bg-background px-3 py-2 text-sm",
+            "placeholder:text-muted-foreground",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+            "disabled:cursor-not-allowed disabled:opacity-50"
+          )}
+          rows={1}
+        />
+        <Button
+          onClick={handleSend}
+          disabled={!inputValue.trim() || isLoading || !userId}
+          size="icon"
+          className="shrink-0 h-[44px] w-[44px]"
+        >
+          <Send className="h-4 w-4" />
+        </Button>
       </div>
     </div>
-  );
-}
+  </div>
+);
 
 // Quiz Component (unchanged)
 function QuizComponent({ quizData }: { quizData: QuizData }) {
@@ -332,4 +337,4 @@ function QuizComponent({ quizData }: { quizData: QuizData }) {
       )}
     </div>
   );
-}
+}}

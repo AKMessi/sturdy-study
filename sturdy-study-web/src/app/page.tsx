@@ -12,92 +12,83 @@ import { Sidebar } from "@/components/Sidebar";
 type TabType = "chat" | "search" | "exams" | "tutor";
 
 export default function Dashboard() {
-  // 1. Get the secure User ID from Clerk
   const { userId, isLoaded } = useAuth();
-  
-  // 2. UI State
   const [activeTab, setActiveTab] = useState<TabType>("chat");
   const [courseName, setCourseName] = useState("General");
 
-  // 3. The Secret Sauce: Create the Composite ID
-  // Format: "user_2b...--General"
-  // If not logged in yet, fallback to "demo_mode"
   const effectiveId = (isLoaded && userId) 
     ? `${userId}--${courseName}` 
     : "demo_mode";
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
-      {/* Sidebar controls the Course Name */}
+      {/* Sidebar */}
       <Sidebar 
         effectiveId={effectiveId}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         courseName={courseName}
         setCourseName={setCourseName}
-        onUploadSuccess={() => {
-          // Optional: trigger any refresh logic here
-        }}
+        onUploadSuccess={() => {}}
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col h-full overflow-hidden">
         
-        {/* Context Bar (Shows what course you are in) */}
-        <div className="px-6 pt-4 pb-0">
+        {/* Context Bar */}
+        <div className="px-6 pt-4 pb-2 shrink-0">
            <div className="text-sm text-muted-foreground flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
               Context: <span className="font-bold text-primary">{courseName}</span> 
            </div>
         </div>
 
-        <div className="flex-1 p-6 pt-4 overflow-y-auto">
+        <div className="flex-1 p-6 pt-4 overflow-hidden flex flex-col">
+          
           {activeTab === "chat" && (
-            <Card className="h-full border-border/50 flex flex-col">
-              <CardHeader className="border-b border-border py-4">
+            <Card className="h-full flex flex-col border-border/50 shadow-sm">
+              <CardHeader className="border-b border-border py-3 shrink-0">
                 <CardTitle>AI Chat Assistant</CardTitle>
-                <CardDescription>
-                  Chatting with your <strong>{courseName}</strong> materials
-                </CardDescription>
+                <CardDescription>Chatting with your <strong>{courseName}</strong> materials</CardDescription>
               </CardHeader>
-              <CardContent className="flex-1 p-0 overflow-hidden">
-                {/* Pass effectiveId so the chat knows which bucket to look in */}
+              <CardContent className="flex-1 p-0 overflow-hidden min-h-0">
                 <ChatTab userId={effectiveId} />
               </CardContent>
             </Card>
           )}
 
           {activeTab === "search" && (
-            <Card className="h-full border-border/50">
-              <CardHeader>
+            <Card className="h-full flex flex-col border-border/50 shadow-sm">
+              <CardHeader className="shrink-0">
                 <CardTitle>Find Practice Problems</CardTitle>
-                <CardDescription>Find external resources for {courseName}</CardDescription>
+                <CardDescription>External resources for {courseName}</CardDescription>
               </CardHeader>
-              <CardContent className="overflow-y-auto">
+              {/* Search needs its own scrollbar */}
+              <CardContent className="flex-1 overflow-y-auto min-h-0">
                 <SearchTab userId={effectiveId} />
               </CardContent>
             </Card>
           )}
 
           {activeTab === "exams" && (
-            <Card className="h-full border-border/50">
-              <CardHeader>
+            <Card className="h-full flex flex-col border-border/50 shadow-sm">
+              <CardHeader className="shrink-0">
                 <CardTitle>Generate Practice Exams</CardTitle>
-                <CardDescription>Create exams based on {courseName} notes</CardDescription>
+                <CardDescription>Create exams based on {courseName}</CardDescription>
               </CardHeader>
-              <CardContent className="overflow-y-auto">
+              <CardContent className="flex-1 overflow-y-auto min-h-0">
                 <ExamTab userId={effectiveId} />
               </CardContent>
             </Card>
           )}
 
           {activeTab === "tutor" && (
-            <Card className="h-full border-border/50 flex flex-col overflow-hidden">
-              <CardHeader className="border-b border-border py-4">
+            <Card className="h-full flex flex-col border-border/50 shadow-sm">
+              <CardHeader className="border-b border-border py-3 shrink-0">
                 <CardTitle>Guided Learning Session</CardTitle>
                 <CardDescription>Master topics in {courseName}</CardDescription>
               </CardHeader>
-              <CardContent className="flex-1 p-0 overflow-hidden">
+              <CardContent className="flex-1 p-0 overflow-hidden min-h-0">
                 <TutorTab userId={effectiveId} />
               </CardContent>
             </Card>
