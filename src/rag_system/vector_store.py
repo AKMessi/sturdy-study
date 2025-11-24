@@ -2,7 +2,7 @@ import os
 import time
 from langchain_pinecone import PineconeVectorStore
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain.docstore.document import Document
+from langchain_core.documents import Document
 from typing import List
 from src.core.config import settings
 
