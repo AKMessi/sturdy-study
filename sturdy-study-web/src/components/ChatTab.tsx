@@ -35,6 +35,13 @@ export function ChatTab({ userId }: ChatTabProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // --- NEW: Reset chat when course changes ---
+  // This is the critical fix for the Composite Key update
+  useEffect(() => {
+    setMessages([]);
+  }, [userId]);
+  // --- END NEW SECTION ---
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -88,7 +95,7 @@ export function ChatTab({ userId }: ChatTabProps) {
         if (quizData) {
           const quizMessage: Message = {
             role: "assistant",
-            content: response.quiz,
+            content: response.quiz, // Keep content for debugging/fallback
             isQuiz: true,
             quizData,
           };
@@ -133,10 +140,11 @@ export function ChatTab({ userId }: ChatTabProps) {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-[calc(100vh-12rem)]"> {/* Fixed height constraint */}
+      
       {/* Messages Area */}
       <ScrollArea className="flex-1 px-1">
-        <div className="space-y-4 p-4">
+        <div className="space-y-4 p-4 pb-20"> {/* Added padding bottom */}
           {messages.length === 0 && (
             <div className="flex items-center justify-center h-full text-muted-foreground text-sm min-h-[200px]">
               Start a conversation by asking a question or requesting a quiz
@@ -181,7 +189,7 @@ export function ChatTab({ userId }: ChatTabProps) {
       </ScrollArea>
 
       {/* Input Area */}
-      <div className="border-t border-border p-4">
+      <div className="mt-auto border-t border-border p-4 bg-background">
         <div className="flex gap-2 items-end">
           <textarea
             ref={textareaRef}
@@ -212,8 +220,10 @@ export function ChatTab({ userId }: ChatTabProps) {
   );
 }
 
-// Quiz Component
+// Quiz Component (unchanged)
 function QuizComponent({ quizData }: { quizData: QuizData }) {
+  // ... (keep your existing QuizComponent code exactly as is) ...
+  // I'm omitting it here to save space, but DO NOT DELETE IT.
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
   const [showResults, setShowResults] = useState(false);
 
@@ -323,4 +333,3 @@ function QuizComponent({ quizData }: { quizData: QuizData }) {
     </div>
   );
 }
-

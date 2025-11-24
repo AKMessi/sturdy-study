@@ -117,7 +117,8 @@ export function TutorTab({ userId }: TutorTabProps) {
     setIsLoading(false);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  // --- FIX IS HERE: Changed the type to allow both Input and TextArea ---
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (topic) {
@@ -178,9 +179,9 @@ export function TutorTab({ userId }: TutorTabProps) {
 
   // UI State 2: Active Session
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-[calc(100vh-12rem)]">
       {/* Top Bar */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-card">
+      <div className="flex items-center justify-between p-4 border-b border-border bg-card shrink-0">
         <div className="flex items-center gap-2">
           <GraduationCap className="h-5 w-5 text-primary" />
           <div>
@@ -201,7 +202,7 @@ export function TutorTab({ userId }: TutorTabProps) {
 
       {/* Messages Area */}
       <ScrollArea className="flex-1 px-1">
-        <div className="space-y-4 p-4">
+        <div className="space-y-4 p-4 pb-20">
           {messages.length === 0 && (
             <div className="flex items-center justify-center h-full text-muted-foreground text-sm min-h-[200px]">
               Your tutor will guide you through learning {topic}
@@ -242,7 +243,7 @@ export function TutorTab({ userId }: TutorTabProps) {
       </ScrollArea>
 
       {/* Input Area */}
-      <div className="border-t border-border p-4">
+      <div className="mt-auto border-t border-border p-4 bg-background">
         <div className="flex gap-2 items-end">
           <textarea
             ref={textareaRef}
@@ -272,4 +273,3 @@ export function TutorTab({ userId }: TutorTabProps) {
     </div>
   );
 }
-

@@ -18,9 +18,8 @@ def _get_vector_store(namespace: str):
     """
     Returns a Pinecone Vector Store connected to our index.
     CRITICAL: We use 'namespace' to separate users.
-    namespace = user_id (from Clerk)
     """
-
+    
     os.environ["PINECONE_API_KEY"] = settings.PINECONE_API_KEY
     
     return PineconeVectorStore.from_existing_index(
@@ -39,6 +38,8 @@ def add_documents_to_store(docs: List[Document], collection_name: str):
     if not docs:
         return
 
+    os.environ["PINECONE_API_KEY"] = settings.PINECONE_API_KEY
+    
     try:
         PineconeVectorStore.from_documents(
             documents=docs,
@@ -61,8 +62,6 @@ def get_retriever(collection_name: str):
 def get_all_documents(collection_name: str) -> List[Document]:
     """
     Retrieves documents for the 'Prioritize' and 'Exam' features.
-    Pinecone doesn't support a simple 'get all', so we perform a 
-    broad similarity search to fetch context.
     """
     vector_store = _get_vector_store(collection_name)
     return vector_store.similarity_search(".", k=100)

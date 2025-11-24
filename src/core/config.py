@@ -14,6 +14,6 @@ class Settings(BaseSettings):
     GOOGLE_API_KEY: str
     TAVILY_API_KEY: str
     PINECONE_API_KEY: str
-    PINECONE_INDEX_NAME: str = "sturdy-study" 
+    PINECONE_INDEX_NAME: str = "sturdy-study"
 
 settings = Settings()
