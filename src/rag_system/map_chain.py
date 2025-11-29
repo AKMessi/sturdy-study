@@ -8,7 +8,7 @@ import re
 
 # setup: llm
 llm_pro = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash", 
+    model="gemini-flash-latest", 
     temperature=0.1,
     google_api_key=settings.GOOGLE_API_KEY
 )

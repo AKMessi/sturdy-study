@@ -13,7 +13,7 @@ from reportlab.lib.units import inch
 
 # setup: llm
 llm_pro = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash", 
+    model="gemini-flash-latest", 
     temperature=0.3,
     google_api_key=settings.GOOGLE_API_KEY
 )
