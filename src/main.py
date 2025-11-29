@@ -13,8 +13,12 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    # In production, replace ["*"] with your actual frontend domain
-    allow_origins=["*"], 
+    allow_origins=[
+        "http://localhost:3000",
+        "https://sturdystudy.online",      
+        "https://www.sturdystudy.online",  
+        "*"                                
+    ], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
