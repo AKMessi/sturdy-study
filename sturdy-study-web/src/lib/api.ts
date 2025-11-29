@@ -84,7 +84,7 @@ export interface YouTubeRequest {
 // ============================================================================
 
 const apiClient: AxiosInstance = axios.create({
-  baseURL: 'http://localhost:8000/v1/study',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/v1/study',
   headers: {
     'Content-Type': 'application/json',
   },
