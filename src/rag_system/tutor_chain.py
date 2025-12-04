@@ -10,7 +10,7 @@ from typing import List, Dict, Any
 
 # setup: llm
 llm_pro = ChatGoogleGenerativeAI(
-    model="gemini-flash-latest", 
+    model="gemini-2.5-flash", 
     temperature=0.4,
     google_api_key=settings.GOOGLE_API_KEY
 )

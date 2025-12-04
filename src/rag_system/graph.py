@@ -61,7 +61,7 @@ Your decision (rag or quiz):
 """
 router_prompt = PromptTemplate.from_template(ROUTER_PROMPT_TEMPLATE)
 router_llm = ChatGoogleGenerativeAI(
-    model="gemini-flash-latest", 
+    model="gemini-2.5-flash", 
     temperature=0,
     google_api_key=settings.GOOGLE_API_KEY
 )
