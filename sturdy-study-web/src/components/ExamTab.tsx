@@ -215,7 +215,11 @@ export function ExamTab({ userId }: ExamTabProps) {
                   size="lg"
                   className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600"
                 >
-                  <a href={`http://localhost:8000${jobStatus.download_url}`} target="_blank" rel="noopener noreferrer">
+                  <a 
+                    href={`https://api.sturdystudy.online${jobStatus.download_url}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                  >
                     <Button>Download PDF</Button>
                   </a>
                 </Button>
