@@ -19,7 +19,7 @@ llm_flash = ChatGoogleGenerativeAI(
     google_api_key=settings.GOOGLE_API_KEY
 )
 llm_pro = ChatGoogleGenerativeAI(
-    model="gemini-2.5-pro", 
+    model="gemini-3-pro-preview", 
     temperature=0.3,
     google_api_key=settings.GOOGLE_API_KEY
 )
