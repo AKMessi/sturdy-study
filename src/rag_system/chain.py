@@ -7,7 +7,7 @@ from langchain_core.vectorstores.base import VectorStoreRetriever
 from src.core.config import settings
 
 llm = ChatGoogleGenerativeAI(
-    model="gemini-3-pro-preview",
+    model="gemini-2.5-flash",
     temperature=0.3,
     google_api_key=settings.GOOGLE_API_KEY
 )
